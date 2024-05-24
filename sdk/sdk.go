@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -81,7 +82,9 @@ func RegisterHandler(n string, s string, cb ConsumerHandleFunc) (HandlerCancelFu
 	return func() {
 		err := js.DeleteConsumer(context.Background(), "EVENTS", n)
 		if err != nil {
-			slog.Error("failed to delete consumer", "error", err)
+			if !errors.Is(jetstream.ErrConsumerNotFound, err) {
+				slog.Error("failed to delete consumer", "error", err)
+			}
 		}
 		cctx.Stop()
 	}, nil
