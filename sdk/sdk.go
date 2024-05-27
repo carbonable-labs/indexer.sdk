@@ -6,8 +6,13 @@ import (
 	"encoding/gob"
 	"errors"
 	"log/slog"
+	"os"
+	"regexp"
 	"time"
 
+	"github.com/NethermindEth/juno/core/felt"
+	"github.com/NethermindEth/starknet.go/rpc"
+	"github.com/NethermindEth/starknet.go/utils"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -24,12 +29,59 @@ type (
 		Keys        []string  `json:"keys"`
 		Data        []string  `json:"data"`
 	}
+	// Indexer configuration
+	Config struct {
+		Appname    string     `json:"app_name"`
+		Contracts  []Contract `json:"contracts"`
+		StartBlock uint64     `json:"start_block"`
+	}
+	Contract struct {
+		Events  map[string]string `json:"events"`
+		Name    string            `json:"name"`
+		Address string            `json:"address"`
+	}
+
+	// RegisterResponse
+	RegisterResponse struct {
+		AppName string `json:"app_name"`
+		Hash    string `json:"hash"`
+	}
 )
+
+func (c Config) FilterByName(name string) Config {
+	var contracts []Contract
+	for _, contract := range c.Contracts {
+		m, _ := regexp.MatchString(name, contract.Name)
+		if m {
+			contracts = append(contracts, contract)
+		}
+	}
+	c.Contracts = contracts
+	return c
+}
+
+func (c Contract) Call(ctx context.Context, client rpc.RpcProvider, fn string, calldata ...*felt.Felt) ([]*felt.Felt, error) {
+	addr, err := utils.HexToFelt(c.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := rpc.FunctionCall{
+		ContractAddress:    addr,
+		EntryPointSelector: utils.GetSelectorFromNameFelt(fn),
+		Calldata:           calldata,
+	}
+	callResp, rpcErr := client.Call(ctx, tx, rpc.BlockID{Tag: "latest"})
+	if rpcErr != nil {
+		return nil, rpcErr
+	}
+	return callResp, nil
+}
 
 func RegisterHandler(n string, s string, cb ConsumerHandleFunc) (HandlerCancelFunc, error) {
 	slog.Debug("register handler", "app_name", n)
 
-	nc, err := nats.Connect("carbonable-nats-sepolia.fly.dev", nats.Token("ibLtRZVRLFVNDZa9ZabGZVWuAxxq3d"))
+	nc, err := nats.Connect(os.Getenv("NATS_URL"), nats.Token(os.Getenv("NATS_TOKEN")))
 	if err != nil {
 		slog.Error("failed to connect to nats", "error", err)
 		return nil, err
