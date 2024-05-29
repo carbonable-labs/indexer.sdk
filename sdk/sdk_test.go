@@ -2,6 +2,8 @@ package sdk
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,7 +13,7 @@ import (
 )
 
 var testConfigs = Config{
-	Appname: "test_config",
+	AppName: "test_config",
 	Contracts: []Contract{
 		{
 			Name:    "project",
@@ -84,7 +86,10 @@ func TestConfigure(t *testing.T) {
 	assert.Equal(t, "test_token", indexerToken)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := `{ "app_name": "test_config", "hash": "test_hash" }`
+		var c Config
+		_ = json.NewDecoder(r.Body).Decode(&c)
+		defer r.Body.Close()
+		response := fmt.Sprintf(`{ "app_name": "%s", "hash": "test_hash" }`, c.AppName)
 		_, _ = w.Write([]byte(response))
 	}))
 	defer server.Close()

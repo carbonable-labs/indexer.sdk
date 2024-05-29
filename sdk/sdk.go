@@ -33,7 +33,7 @@ type (
 	}
 	// Indexer configuration
 	Config struct {
-		Appname    string     `json:"app_name"`
+		AppName    string     `json:"app_name"`
 		Contracts  []Contract `json:"contracts"`
 		StartBlock uint64     `json:"start_block"`
 	}
@@ -107,32 +107,32 @@ func WithApiKey(k string) error {
 	return nil
 }
 
-func Configure(c Config) (RegisterResponse, error) {
-	slog.Debug("configure", "app_name", c.Appname)
+func Configure(c Config) (*RegisterResponse, error) {
+	slog.Debug("configure", "app_name", c.AppName)
 
 	var r RegisterResponse
 	client := http.DefaultClient
 
 	body, err := json.Marshal(c)
 	if err != nil {
-		return r, err
+		return nil, err
 	}
 	req, err := http.NewRequest("POST", indexerApi+"/configure", bytes.NewReader(body))
 	if err != nil {
-		return r, err
+		return nil, err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return r, err
+		return nil, err
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		return r, err
+		return nil, err
 	}
 	defer resp.Body.Close()
-	return r, nil
+	return &r, nil
 }
 
 func RegisterHandler(n string, s string, cb ConsumerHandleFunc) (HandlerCancelFunc, error) {
