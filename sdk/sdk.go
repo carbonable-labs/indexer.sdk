@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"regexp"
 	"time"
@@ -48,6 +50,13 @@ type (
 	}
 )
 
+var (
+	indexerToken  = os.Getenv("INDEXER_TOKEN")
+	indexerUrl    = os.Getenv("INDEXER_URL")
+	indexerApi    = os.Getenv("INDEXER_API")
+	indexerApiKey = os.Getenv("INDEXER_API_KEY")
+)
+
 func (c Config) FilterByName(name string) Config {
 	var contracts []Contract
 	for _, contract := range c.Contracts {
@@ -78,10 +87,58 @@ func (c Contract) Call(ctx context.Context, client rpc.RpcProvider, fn string, c
 	return callResp, nil
 }
 
+func WithToken(t string) error {
+	indexerToken = t
+	return nil
+}
+
+func WithUrl(u string) error {
+	indexerUrl = u
+	return nil
+}
+
+func WithApi(a string) error {
+	indexerApi = a
+	return nil
+}
+
+func WithApiKey(k string) error {
+	indexerApiKey = k
+	return nil
+}
+
+func Configure(c Config) (RegisterResponse, error) {
+	slog.Debug("configure", "app_name", c.Appname)
+
+	var r RegisterResponse
+	client := http.DefaultClient
+
+	body, err := json.Marshal(c)
+	if err != nil {
+		return r, err
+	}
+	req, err := http.NewRequest("POST", indexerApi+"/configure", bytes.NewReader(body))
+	if err != nil {
+		return r, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return r, err
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(&r)
+	if err != nil {
+		return r, err
+	}
+	defer resp.Body.Close()
+	return r, nil
+}
+
 func RegisterHandler(n string, s string, cb ConsumerHandleFunc) (HandlerCancelFunc, error) {
 	slog.Debug("register handler", "app_name", n)
 
-	nc, err := nats.Connect(os.Getenv("NATS_URL"), nats.Token(os.Getenv("NATS_TOKEN")))
+	nc, err := nats.Connect(indexerUrl, nats.Token(indexerToken))
 	if err != nil {
 		slog.Error("failed to connect to nats", "error", err)
 		return nil, err

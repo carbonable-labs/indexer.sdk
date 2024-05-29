@@ -2,6 +2,8 @@ package sdk
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/NethermindEth/starknet.go/rpc"
@@ -74,4 +76,23 @@ func TestConfigCall(t *testing.T) {
 	resp, err = c.Call(context.Background(), client, "not_a_function")
 	assert.Equal(t, 0, len(resp))
 	assert.Equal(t, &rpc.RPCError{Code: -32603, Message: "Internal Error", Data: "Contract error"}, err)
+}
+
+func TestConfigure(t *testing.T) {
+	err := WithToken("test_token")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "test_token", indexerToken)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := `{ "app_name": "test_config", "hash": "test_hash" }`
+		_, _ = w.Write([]byte(response))
+	}))
+	defer server.Close()
+
+	_ = WithApi(server.URL)
+	conf, err := Configure(testConfigs)
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "test_config", conf.AppName)
+	assert.Equal(t, "test_hash", conf.Hash)
 }
