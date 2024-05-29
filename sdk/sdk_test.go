@@ -86,6 +86,9 @@ func TestConfigure(t *testing.T) {
 	assert.Equal(t, "test_token", indexerToken)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/register" {
+			t.Errorf("expected /register, got %s", r.URL.Path)
+		}
 		var c Config
 		_ = json.NewDecoder(r.Body).Decode(&c)
 		defer r.Body.Close()
