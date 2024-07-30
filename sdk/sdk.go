@@ -57,6 +57,8 @@ var (
 	indexerApiKey = os.Getenv("INDEXER_API_KEY")
 )
 
+// FilterByName method  
+// Filters config contracts by name. Useful when you want to select a specific contract in your config
 func (c Config) FilterByName(name string) Config {
 	var contracts []Contract
 	for _, contract := range c.Contracts {
@@ -69,6 +71,8 @@ func (c Config) FilterByName(name string) Config {
 	return c
 }
 
+// Call method  
+// Execute `call` function on a contract of your config.
 func (c Contract) Call(ctx context.Context, client rpc.RpcProvider, fn string, calldata ...*felt.Felt) ([]*felt.Felt, error) {
 	addr, err := utils.HexToFelt(c.Address)
 	if err != nil {
@@ -87,26 +91,36 @@ func (c Contract) Call(ctx context.Context, client rpc.RpcProvider, fn string, c
 	return callResp, nil
 }
 
+// Configure indexer token
+// Either use this methof or set the token in the env variable INDEXER_TOKEN
 func WithToken(t string) error {
 	indexerToken = t
 	return nil
 }
 
+// Configure indexer url
+// Either use this methof or set the url in the env variable INDEXER_URL
 func WithUrl(u string) error {
 	indexerUrl = u
 	return nil
 }
 
+// Configure indexer api
+// Either use this methof or set the api in the env variable INDEXER_API
 func WithApi(a string) error {
 	indexerApi = a
 	return nil
 }
 
+// Configure indexer api key
+// Either use this methof or set the api key in the env variable INDEXER_API_KEY
 func WithApiKey(k string) error {
 	indexerApiKey = k
 	return nil
 }
 
+// Configure method  
+// Given a input config, it will register the app in the indexer and return the hash of the app
 func Configure(c Config) (*RegisterResponse, error) {
 	slog.Debug("configure", "app_name", c.AppName)
 
@@ -136,10 +150,13 @@ func Configure(c Config) (*RegisterResponse, error) {
 	return &r, nil
 }
 
+// RegisterHandler method  
+// Based on the config you sent to configuration it will wait messages
+// from queue and use the callback you provide to integrate messages into your system
 func RegisterHandler(n string, s string, cb ConsumerHandleFunc) (HandlerCancelFunc, error) {
 	slog.Debug("register handler", "app_name", n)
 
-	nc, err := nats.Connect(indexerUrl, nats.Token(indexerToken))
+	nc, err := nats.Connect(indexerUrl, nats.Token(indexerToken)
 	if err != nil {
 		slog.Error("failed to connect to nats", "error", err)
 		return nil, err
