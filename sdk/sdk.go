@@ -156,7 +156,7 @@ func Configure(c Config) (*RegisterResponse, error) {
 func RegisterHandler(n string, s string, cb ConsumerHandleFunc) (HandlerCancelFunc, error) {
 	slog.Debug("register handler", "app_name", n)
 
-	nc, err := nats.Connect(indexerUrl, nats.Token(indexerToken)
+	nc, err := nats.Connect(indexerUrl, nats.Token(indexerToken))
 	if err != nil {
 		slog.Error("failed to connect to nats", "error", err)
 		return nil, err
