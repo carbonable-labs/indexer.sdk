@@ -3,6 +3,7 @@ module github.com/carbonable-labs/indexer.sdk
 go 1.22.2
 
 require (
+	github.com/NethermindEth/juno v0.11.8
 	github.com/NethermindEth/starknet.go v0.7.0
 	github.com/nats-io/nats.go v1.35.0
 	github.com/stretchr/testify v1.9.0
@@ -10,7 +11,6 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
-	github.com/NethermindEth/juno v0.11.8 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
